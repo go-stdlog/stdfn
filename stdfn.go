@@ -23,6 +23,11 @@ func (f fnLogger) SetLevel(level stdlog.Level) {
 	f.level = level
 }
 
+func (f fnLogger) Leveled(level stdlog.Level) stdlog.Logger {
+	f.level = level
+	return f
+}
+
 func (f fnLogger) Debug(msg string, keysAndValues ...any) {
 	f.target(stdlog.LevelDebug, f.name, nil, msg, keysAndValues)
 }
