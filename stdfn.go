@@ -1,6 +1,9 @@
 package stdfn
 
-import "github.com/go-stdlog/stdlog"
+import (
+	"github.com/go-stdlog/stdlog"
+	"os"
+)
 
 type ConsumerFunc func(level stdlog.Level, name string, err error, msg string, keyValues []any)
 
@@ -46,10 +49,12 @@ func (f fnLogger) Error(err error, msg string, keysAndValues ...any) {
 
 func (f fnLogger) Fatal(msg string, keysAndValues ...any) {
 	f.target(stdlog.LevelFatal, f.name, nil, msg, keysAndValues)
+	os.Exit(1)
 }
 
 func (f fnLogger) FatalError(err error, msg string, keysAndValues ...any) {
 	f.target(stdlog.LevelFatal, f.name, err, msg, keysAndValues)
+	os.Exit(1)
 }
 
 func New(consumer ConsumerFunc) stdlog.Logger {
