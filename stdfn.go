@@ -4,17 +4,18 @@ import (
 	"github.com/go-stdlog/stdlog"
 )
 
-type ConsumerFunc func(level stdlog.Level, name string, err error, msg string, keyValues []any, stackSkip uint)
+type ConsumerFunc func(level stdlog.Level, name string, err error, msg string, keyValues []any, stackSkip uint, fatalBehavior stdlog.FatalBehavior)
 
 type fnLogger struct {
-	target     ConsumerFunc
-	name       string
-	level      stdlog.Level
-	baseFields []any
-	stackSkip  uint
+	target        ConsumerFunc
+	name          string
+	level         stdlog.Level
+	baseFields    []any
+	stackSkip     uint
+	fatalBehavior stdlog.FatalBehavior
 }
 
-func (f fnLogger) Named(name string) stdlog.Logger {
+func (f *fnLogger) Named(name string) stdlog.Logger {
 	if f.name != "" {
 		f.name = f.name + "." + name
 	} else {
@@ -23,21 +24,25 @@ func (f fnLogger) Named(name string) stdlog.Logger {
 	return f
 }
 
-func (f fnLogger) Skipping(count uint) stdlog.Logger {
+func (f *fnLogger) SetFatalBehavior(b stdlog.FatalBehavior) {
+	f.fatalBehavior = b
+}
+
+func (f *fnLogger) Skipping(count uint) stdlog.Logger {
 	f.stackSkip = count
 	return f
 }
 
-func (f fnLogger) SetLevel(level stdlog.Level) {
+func (f *fnLogger) SetLevel(level stdlog.Level) {
 	f.level = level
 }
 
-func (f fnLogger) Leveled(level stdlog.Level) stdlog.Logger {
+func (f *fnLogger) Leveled(level stdlog.Level) stdlog.Logger {
 	f.level = level
 	return f
 }
 
-func (f fnLogger) WithFields(keysAndValues ...any) stdlog.Logger {
+func (f *fnLogger) WithFields(keysAndValues ...any) stdlog.Logger {
 	assertKvs("WithFields", keysAndValues)
 	f.baseFields = append(f.baseFields, keysAndValues...)
 	return f
@@ -49,36 +54,36 @@ func assertKvs(method string, kvs []any) {
 	}
 }
 
-func (f fnLogger) Debug(msg string, keysAndValues ...any) {
+func (f *fnLogger) Debug(msg string, keysAndValues ...any) {
 	assertKvs(stdlog.LevelDebug.String(), keysAndValues)
-	f.target(stdlog.LevelDebug, f.name, nil, msg, append(f.baseFields, keysAndValues...), f.stackSkip)
+	f.target(stdlog.LevelDebug, f.name, nil, msg, append(f.baseFields, keysAndValues...), f.stackSkip, f.fatalBehavior)
 }
 
-func (f fnLogger) Info(msg string, keysAndValues ...any) {
+func (f *fnLogger) Info(msg string, keysAndValues ...any) {
 	assertKvs(stdlog.LevelInfo.String(), keysAndValues)
-	f.target(stdlog.LevelInfo, f.name, nil, msg, append(f.baseFields, keysAndValues...), f.stackSkip)
+	f.target(stdlog.LevelInfo, f.name, nil, msg, append(f.baseFields, keysAndValues...), f.stackSkip, f.fatalBehavior)
 }
 
-func (f fnLogger) Warning(msg string, keysAndValues ...any) {
+func (f *fnLogger) Warning(msg string, keysAndValues ...any) {
 	assertKvs(stdlog.LevelWarning.String(), keysAndValues)
-	f.target(stdlog.LevelWarning, f.name, nil, msg, append(f.baseFields, keysAndValues...), f.stackSkip)
+	f.target(stdlog.LevelWarning, f.name, nil, msg, append(f.baseFields, keysAndValues...), f.stackSkip, f.fatalBehavior)
 }
 
-func (f fnLogger) Error(err error, msg string, keysAndValues ...any) {
+func (f *fnLogger) Error(err error, msg string, keysAndValues ...any) {
 	assertKvs(stdlog.LevelError.String(), keysAndValues)
-	f.target(stdlog.LevelError, f.name, err, msg, append(f.baseFields, keysAndValues...), f.stackSkip)
+	f.target(stdlog.LevelError, f.name, err, msg, append(f.baseFields, keysAndValues...), f.stackSkip, f.fatalBehavior)
 }
 
-func (f fnLogger) Fatal(msg string, keysAndValues ...any) {
+func (f *fnLogger) Fatal(msg string, keysAndValues ...any) {
 	assertKvs(stdlog.LevelFatal.String(), keysAndValues)
-	f.target(stdlog.LevelFatal, f.name, nil, msg, append(f.baseFields, keysAndValues...), f.stackSkip)
+	f.target(stdlog.LevelFatal, f.name, nil, msg, append(f.baseFields, keysAndValues...), f.stackSkip, f.fatalBehavior)
 }
 
-func (f fnLogger) FatalError(err error, msg string, keysAndValues ...any) {
+func (f *fnLogger) FatalError(err error, msg string, keysAndValues ...any) {
 	assertKvs(stdlog.LevelFatal.String(), keysAndValues)
-	f.target(stdlog.LevelFatal, f.name, err, msg, append(f.baseFields, keysAndValues...), f.stackSkip)
+	f.target(stdlog.LevelFatal, f.name, err, msg, append(f.baseFields, keysAndValues...), f.stackSkip, f.fatalBehavior)
 }
 
 func New(consumer ConsumerFunc) stdlog.Logger {
-	return &fnLogger{target: consumer}
+	return &fnLogger{target: consumer, fatalBehavior: stdlog.FatalExits}
 }
